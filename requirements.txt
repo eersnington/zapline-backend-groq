@@ -1,0 +1,7 @@
+fastapi[all]
+twilio
+pyngrok
+python-dotenv
+python-multipart
+prisma
+ShopifyAPI
