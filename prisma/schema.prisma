@@ -1,0 +1,61 @@
+generator client {
+  provider             = "prisma-client-py"
+  interface            = "asyncio"
+  recursive_type_depth = "5"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                     String    @id @unique
+  email                  String    @unique
+  stripeCustomerId       String?   @unique @map("stripe_customer_id")
+  stripeSubscriptionId   String?   @unique @map("stripe_subscription_id")
+  stripePriceId          String?   @unique @map("stripe_price_id")
+  stripeCurrentPeriodEnd DateTime? @map("stripe_current_period_end")
+}
+
+model Profile {
+  id        Int    @id @default(autoincrement())
+  userId    String @unique
+  brandname String
+  website   String
+  email     String
+  type      String
+}
+
+model Config {
+  id             Int     @id @default(autoincrement())
+  userId         String  @unique
+  transferNumber String?
+  fallbackMode   String
+  fallbackEmail  String?
+}
+
+model Bot {
+  id            Int     @id @default(autoincrement())
+  userId        String  @unique
+  phone_no      String
+  myshopify     String?
+  app_token     String?
+  refund_accept String
+  refund_window String?
+}
+
+model CallStats {
+  id                Int    @id(map: "call_stats_pkey") @default(autoincrement())
+  user_id           String @unique
+  total_calls       Int
+  total_abandoned   Int
+  total_transferred Int
+  total_automated   Int
+}
+
+model call_logs {
+  id        Int    @id(map: "call_logs_pkey1") @default(autoincrement())
+  user_id   String @unique
+  call_data Json
+}
