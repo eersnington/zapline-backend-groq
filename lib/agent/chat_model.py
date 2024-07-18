@@ -1,10 +1,10 @@
 import asyncio
-from typing import List, Optional
+from typing import Dict, List, Optional
 from datetime import datetime
 import shopify
 from pydantic import BaseModel
 
-from lib.agent.llm import GroqClient
+from lib.agent.llm import GroqClient, LLMModel, ClassifierModel, LLMChat
 from lib.db import track_metrics
 
 class Order(BaseModel):
@@ -14,13 +14,20 @@ class Order(BaseModel):
     status: str
     date: datetime
 
+llm_model = LLMModel()
+classifier_model = ClassifierModel()
+
 class CallChatSession:
-    def __init__(self, app_token: str, myshopify: str, bot_name: str, brand_name: str):
+    def __init__(self, app_token: str, myshopify: str, bot_name: str, brand_name: str, customer_info: Dict[str, str] = None):
         self.app_token = app_token
         self.myshopify = myshopify
         self.bot_name = bot_name
         self.brand_name = brand_name
-        self.groq_client = GroqClient(api_key=settings.groq_api_key, model=get_model())
+        self.agent = LLMChat(store_name=bot_name,
+                            store_details=brand_name,
+                            customer_info=customer_info,
+                            llm_model=llm_model,
+                            classifier_model=classifier_model)
         self.shopify_client = self._init_shopify_client()
         self.order: Optional[Order] = None
         self.call_intent: Optional[str] = None
@@ -90,3 +97,23 @@ class CallChatSession:
         except Exception as e:
             print(f"Error tracking call: {e}")
             return f"Error occurred while tracking call: {str(e)}"
+        
+if __name__ == "__main__":
+    store_name = "TechGadgets Inc."
+    store_details = "We sell high-quality electronics and gadgets. Our most popular categories are smartphones, laptops, and smart home devices."
+    customer_info = {
+            "order_id": "123456",
+            "order_status": "Shipped",
+            "order_date": "2022-01-01",
+            "items_ordered": "Smartphone, Laptop, Smartwatch"
+        }
+    
+    app_token = "your_app_token"
+    myshopify = "your_myshopify_domain"
+    
+    chat = CallChatSession(app_token, 
+                           myshopify, 
+                           store_name, 
+                           store_details)
+    
+                   

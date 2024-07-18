@@ -128,18 +128,16 @@ class ClassifierModel:
         return classification_response.content
     
 class LLMChat:
-    def __init__(self, store_name: str, store_details: str):
-        self.llm_model = LLMModel()
-        self.classifier_model = ClassifierModel()
+    def __init__(self, store_name: str, 
+                 store_details: str, 
+                 customer_info: Dict[str, str] = None,
+                 llm_model: LLMModel = None, classifier_model: ClassifierModel = None):
+        self.llm_model = llm_model
+        self.classifier_model = classifier_model
         self.chat_history: List[Dict[str, str]] = []
         self.store_name = store_name
         self.store_details = store_details
-        self.customer_info = {
-            "order_id": "123456",
-            "order_status": "Shipped",
-            "order_date": "2022-01-01",
-            "items_ordered": "Smartphone, Laptop, Smartwatch"
-        }
+        self.customer_info = customer_info
 
     def add_message(self, role: str, content: str):
         self.chat_history.append({"role": role, "content": content})
@@ -148,32 +146,37 @@ class LLMChat:
         return (
             f"You are an AI assistant for {self.store_name}, an e-commerce store, acting as a seasoned phone support representative. "
             f"Here are some details about the store: {self.store_details}\n"
-            f"Customer's order details: "
+            f"Customer's order details - Explain the status of the customer's order with the items bought:\n"
             f"Order ID: {self.customer_info.get('order_id', 'N/A')}, "
             f"Order Status: {self.customer_info.get('order_status', 'N/A')}, "
             f"Order Date: {self.customer_info.get('order_date', 'N/A')}, "
             f"Items Ordered: {self.customer_info.get('items_ordered', 'N/A')}\n"
-            "Return/Refund/Cancellation Policy: Returns accepted within 30 days of purchase. "
+            # "Return/Refund/Cancellation Policy: Returns accepted within 30 days of purchase. "
             "Is Refundable: Yes, Is Returnable: Yes, Is Cancellable: Yes for unshipped orders\n"
             "Guidelines:\n"
-            "1. Address the customer's specific intent and question directly.\n"
+            "1. Address the customer's specific intent and question directly. Talk in a way a layman can understand. But don't be talkative. Try to keep your responses short. \n"
             "2. Only ask for necessary details not already provided in the customer information.\n"
-            "3. For refund or cancellation requests:\n"
-            "   a. Try to convince the customer to get a replacement instead of a discount.\n"
-            "   b. If it makes sense, you can offer an incentive like 20$ discount with replacment.\n"
-            "   c. Present it as an option to the customer, ask them which do they prefer.\n"
+            "3. For refund or cancellation requests, this is the flow:\n"
+            "   a. First, Confirm the customer's intent and ask for the reason.\n"
+            "   b. Then after the reason is stated, evaluate it, and see if a replacement for the item or similar is possible.\n"
+            "   c. If it makes sense for the situation, you can offer an incentive like 20$ discount with replacment.\n"
+            "   d. Present it as an option to the customer, ask them which do they prefer.\n"
             "4. If the call intent is sales or transfer, inform the customer that the call will be transferred immediately.\n"
             "5. Keep responses concise and relevant to the user's query.\n"
             "6. If unsure about any information, admit it rather than making assumptions.\n"
             "7. Maintain a professional, friendly, and helpful tone throughout the conversation.\n"
-            "8. Do not be talkative. Try to keep your responses short. Don't act humanley like apologise or say I understand or say thank you.\n"
+            "8. Don't act humanley like apologising or say I understand or say thank you.\n"
             "9. End the conversation by thanking the customer for contacting the store.\n"
-            "Remember, you don't process any requests directly. Just follow the guidelines above, and inform the customer that the appropriate team will handle their request after you have handled it."
+            "Remember, you don't process any requests directly. The above information is the only thing you have, and you can't access for more. Just follow the guidelines above, and inform the customer that the appropriate team will handle their request after you have handled it."
         )
     def classify_intent(self, message: str) -> str:
+        if self.classifier_model is None:
+            raise NotImplementedError("LLMChat - Classifier model is not initialized.")
         return self.classifier_model.classify(message)
 
     def generate_response(self, user_message: str) -> str:
+        if self.llm_model is None:
+            raise NotImplementedError("LLMChat - LLM model is not initialized.")
         # Classify the intent
         intent = self.classify_intent(user_message)
         
@@ -201,8 +204,18 @@ class LLMChat:
 if __name__ == "__main__":
     store_name = "TechGadgets Inc."
     store_details = "We sell high-quality electronics and gadgets. Our most popular categories are smartphones, laptops, and smart home devices."
+    customer_info = {
+            "order_id": "123456",
+            "order_status": "Shipped",
+            "order_date": "2022-01-01",
+            "items_ordered": "Smartphone, Laptop, Smartwatch"
+        }
     
-    chat = LLMChat(store_name, store_details)
+    chat = LLMChat(store_name=store_name, 
+                   store_details=store_details, 
+                   customer_info=customer_info, 
+                   llm_model=LLMModel(), 
+                   classifier_model=ClassifierModel())
     
     while True:
         user_message = input("User: ")
